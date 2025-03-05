@@ -208,7 +208,21 @@ class Linkedin(object):
             data["paging"] = res.json()["paging"]
         return data["elements"]
 
-    def search(self, params: Dict, limit=-1, offset=0) -> List:
+    def search(self, params: Dict, limit=-1, offset=0, retry=3) -> List:
+        try:
+            return self.search_raw(params=params, limit=limit, offset=offset)
+        except Exception as e:
+            if retry > 0:
+                print("Retrying...")
+                return self.search(params, limit=limit, offset=offset, retry=retry - 1)
+            else:
+                import traceback
+                traceback.print_exc()
+                raise e
+
+        
+
+    def search_raw(self, params: Dict, limit=-1, offset=0) -> List:
         """Perform a LinkedIn search.
 
         :param params: Search parameters (see code)

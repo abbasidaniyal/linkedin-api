@@ -160,6 +160,15 @@ class Client(object):
         data = res.json()
 
         if data and data["login_result"] != "PASS":
+
+            challenge_url = data.get("challenge_url")
+
+            if challenge_url:
+                # open and wait for redirect
+                res = requests.get(challenge_url, cookies=self.session.cookies)
+                return self._do_authentication_request(username, password)
+
+
             raise ChallengeException(data["login_result"])
 
         if res.status_code == 401:
