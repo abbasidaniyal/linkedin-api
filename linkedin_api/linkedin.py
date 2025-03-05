@@ -763,6 +763,11 @@ class Linkedin(object):
         # NOTE this still works for now, but will probably eventually have to be converted to
         # https://www.linkedin.com/voyager/api/identity/profiles/ACoAAAKT9JQBsH7LwKaE9Myay9WcX8OVGuDq9Uw
         res = self._fetch(f"/identity/profiles/{public_id or urn_id}/profileView")
+        if res.status_code != 200:
+            self.logger.info("request failed [status={}]".format(res.status_code))
+            raise Exception(
+                "Request failed: get_profile. Try refreshing cookies or solving challenge in a browser."
+            )
 
         data = res.json()
         if data and "status" in data and data["status"] != 200:
@@ -998,6 +1003,12 @@ class Linkedin(object):
 
         items = []
 
+        # Find the index with the most items
+        # When dealing with grouped experiences (e.g. multiple positions at the same company),
+        # the API response will contain multiple indexes in data["included"].
+        # The index with the most elements will contain all experiences, both grouped and individual,
+        # while other indexes may only contain partial data for the grouped experiences.
+        # Therefore, we want to use the index with the most items to ensure we process all experiences.
         max_items_index = max(
             range(len(data["included"])),
             key=lambda i: len(
